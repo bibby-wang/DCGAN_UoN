@@ -156,9 +156,9 @@ class DCGAN(object):
     g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1) \
               .minimize(self.g_loss, var_list=self.g_vars)
     try:
-      tf.global_variables_initializer().run()
+      tf.global_variables_initializer().run(session=self.sess)
     except:
-      tf.initialize_all_variables().run()
+      tf.initialize_all_variables().run(session=self.sess)
 
     self.g_sum = merge_summary([self.z_sum, self.d__sum,
       self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
@@ -252,15 +252,15 @@ class DCGAN(object):
           errD_fake = self.d_loss_fake.eval({
               self.z: batch_z, 
               self.y:batch_labels
-          })
+          }, self.sess)
           errD_real = self.d_loss_real.eval({
               self.inputs: batch_images,
               self.y:batch_labels
-          })
+          }, self.sess)
           errG = self.g_loss.eval({
               self.z: batch_z,
               self.y: batch_labels
-          })
+          }, self.sess)
         else:
           # Update D network
           _, summary_str = self.sess.run([d_optim, self.d_sum],
@@ -277,9 +277,9 @@ class DCGAN(object):
             feed_dict={ self.z: batch_z })
           self.writer.add_summary(summary_str, counter)
           
-          errD_fake = self.d_loss_fake.eval({ self.z: batch_z })
-          errD_real = self.d_loss_real.eval({ self.inputs: batch_images })
-          errG = self.g_loss.eval({self.z: batch_z})
+          errD_fake = self.d_loss_fake.eval({ self.z: batch_z }, self.sess)
+          errD_real = self.d_loss_real.eval({ self.inputs: batch_images }, self.sess)
+          errG = self.g_loss.eval({self.z: batch_z}, self.sess)
 
         counter += 1
         print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \

@@ -1,11 +1,7 @@
 import os
 import sys
 import argparse
-import scipy.misc
-import numpy as np
-
-from model import DCGAN
-from utils import pp, visualize, to_json, show_all_variables
+from runner import Runner
 
 import tensorflow as tf
 
@@ -27,7 +23,8 @@ class ModelConfig():
                      train=False,
                      crop=False,
                      visualize=False,
-                     generate_test_images=100):
+                     generate_test_images=100,
+                     y_dim=None):
     self.epoch = epoch
     self.learning_rate = learning_rate
     self.beta1 = beta1
@@ -46,6 +43,7 @@ class ModelConfig():
     self.crop = crop
     self.visualize = visualize
     self.generate_test_images = generate_test_images
+    self.y_dim = y_dim
 
 def main():
 
@@ -78,60 +76,66 @@ def main():
   if model_config.output_width is None:
     model_config.output_width = model_config.output_height
 
+  if model_config.dataset == 'mnist':
+    model_config.y_dim = 10
+
   if not os.path.exists(model_config.checkpoint_dir):
     os.makedirs(model_config.checkpoint_dir)
   if not os.path.exists(model_config.sample_dir):
     os.makedirs(model_config.sample_dir)
 
-  #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
-  run_config = tf.ConfigProto()
-  run_config.gpu_options.allow_growth=True
+  # #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+  # run_config = tf.ConfigProto()
+  # run_config.gpu_options.allow_growth=True
 
-  # reset tensorflow graph, enables re-running model withour restarting the kernel
-  tf.reset_default_graph()
+  # # reset tensorflow graph, enables re-running model withour restarting the kernel
+  # tf.reset_default_graph()
 
-  with tf.Session(config=run_config) as sess:
-    if model_config.dataset == 'mnist':
-      dcgan = DCGAN(
-          sess,
-          input_width=model_config.input_width,
-          input_height=model_config.input_height,
-          output_width=model_config.output_width,
-          output_height=model_config.output_height,
-          batch_size=model_config.batch_size,
-          sample_num=model_config.batch_size,
-          y_dim=10,
-          z_dim=model_config.generate_test_images,
-          dataset_name=model_config.dataset,
-          input_fname_pattern=model_config.input_fname_pattern,
-          crop=model_config.crop,
-          checkpoint_dir=model_config.checkpoint_dir,
-          sample_dir=model_config.sample_dir,
-          data_dir=model_config.data_dir)
-    else:
-      dcgan = DCGAN(
-          sess,
-          input_width=model_config.input_width,
-          input_height=model_config.input_height,
-          output_width=model_config.output_width,
-          output_height=model_config.output_height,
-          batch_size=model_config.batch_size,
-          sample_num=model_config.batch_size,
-          z_dim=model_config.generate_test_images,
-          dataset_name=model_config.dataset,
-          input_fname_pattern=model_config.input_fname_pattern,
-          crop=model_config.crop,
-          checkpoint_dir=model_config.checkpoint_dir,
-          sample_dir=model_config.sample_dir,
-          data_dir=model_config.data_dir)
+  runner = Runner(model_config)
+  runner.start_training()
 
-    show_all_variables()
+  # with tf.Session(config=run_config) as sess:
+  #   if model_config.dataset == 'mnist':
+  #     dcgan = DCGAN(
+  #         sess,
+  #         input_width=model_config.input_width,
+  #         input_height=model_config.input_height,
+  #         output_width=model_config.output_width,
+  #         output_height=model_config.output_height,
+  #         batch_size=model_config.batch_size,
+  #         sample_num=model_config.batch_size,
+  #         y_dim=10,
+  #         z_dim=model_config.generate_test_images,
+  #         dataset_name=model_config.dataset,
+  #         input_fname_pattern=model_config.input_fname_pattern,
+  #         crop=model_config.crop,
+  #         checkpoint_dir=model_config.checkpoint_dir,
+  #         sample_dir=model_config.sample_dir,
+  #         data_dir=model_config.data_dir)
+  #   else:
+  #     dcgan = DCGAN(
+  #         sess,
+  #         input_width=model_config.input_width,
+  #         input_height=model_config.input_height,
+  #         output_width=model_config.output_width,
+  #         output_height=model_config.output_height,
+  #         batch_size=model_config.batch_size,
+  #         sample_num=model_config.batch_size,
+  #         z_dim=model_config.generate_test_images,
+  #         dataset_name=model_config.dataset,
+  #         input_fname_pattern=model_config.input_fname_pattern,
+  #         crop=model_config.crop,
+  #         checkpoint_dir=model_config.checkpoint_dir,
+  #         sample_dir=model_config.sample_dir,
+  #         data_dir=model_config.data_dir)
 
-    if model_config.train:
-      dcgan.train(model_config)
-    else:
-      if not dcgan.load(model_config.checkpoint_dir)[0]:
-        raise Exception("[!] Train a model first, then run test mode")
+    # show_all_variables()
+
+    # if model_config.train:
+    #   dcgan.train(model_config)
+    # else:
+    #   if not dcgan.load(model_config.checkpoint_dir)[0]:
+    #     raise Exception("[!] Train a model first, then run test mode")
       
 
     # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
@@ -141,8 +145,8 @@ def main():
     #                 [dcgan.h4_w, dcgan.h4_b, None])
 
     # Below is codes for visualization
-    OPTION = 1
-    visualize(sess, dcgan, model_config, OPTION)
+    # OPTION = 1
+    # visualize(sess, dcgan, model_config, OPTION)
 
 if __name__ == '__main__':
   main()
