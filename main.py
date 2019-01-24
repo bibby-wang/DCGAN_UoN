@@ -59,8 +59,8 @@ def main():
   # create a parser of the command line
   parser = argparse.ArgumentParser(description="Runs DCGAN on either mnist or celebA dataset")
   parser.add_argument('--dataset', dest='dataset', choices=["mnist", "celebA"], type=str, default='celebA')
-  parser.add_argument('--input_height=', dest="input_height", type=int)
-  parser.add_argument('--output_height=', dest="output_height", type=int)
+  parser.add_argument('--input_height=', dest="input_height", default=108, type=int)
+  parser.add_argument('--output_height=', dest="output_height", default=108, type=int)
   parser.add_argument('--train', dest="train", action='store_true')
   parser.add_argument('--crop', dest="crop", action='store_true')
   args = parser.parse_args()
@@ -71,8 +71,6 @@ def main():
   model_config.output_height = args.output_height
   model_config.train = args.train
   model_config.crop = args.crop
-
-  print(args)
 
   if model_config.input_width is None:
     model_config.input_width = model_config.input_height
