@@ -71,6 +71,7 @@ class DCGAN(object):
     self.checkpoint_dir = checkpoint_dir
     self.data_dir = data_dir
 
+    # TODO: make dataset agnostic
     if self.dataset_name == 'mnist':
       self.data_X, self.data_y = self.load_mnist()
       self.c_dim = self.data_X[0].shape[-1]
@@ -168,6 +169,7 @@ class DCGAN(object):
 
     sample_z = np.random.uniform(-1, 1, size=(self.sample_num , self.z_dim))
     
+    # TODO: separate batching of dataset and pre-processing
     if config.dataset == 'mnist':
       sample_inputs = self.data_X[0:self.sample_num]
       sample_labels = self.data_y[0:self.sample_num]
@@ -196,6 +198,7 @@ class DCGAN(object):
       print(" [!] Load failed...")
 
     for epoch in xrange(config.epoch):
+      # TODO: make dataset agnostic
       if config.dataset == 'mnist':
         batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
       else:      
@@ -205,6 +208,8 @@ class DCGAN(object):
         batch_idxs = min(len(self.data), config.train_size) // config.batch_size
 
       for idx in xrange(0, int(batch_idxs)):
+
+        # TODO: separate batching of dataset and pre-processing
         if config.dataset == 'mnist':
           batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
           batch_labels = self.data_y[idx*config.batch_size:(idx+1)*config.batch_size]
@@ -226,6 +231,7 @@ class DCGAN(object):
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)
 
+        # TODO: make error computation to be dataset agnostic
         if config.dataset == 'mnist':
           # Update D network
           _, summary_str = self.sess.run([d_optim, self.d_sum],
@@ -287,6 +293,7 @@ class DCGAN(object):
             time.time() - start_time, errD_fake+errD_real, errG))
 
         if np.mod(counter, 100) == 1:
+          # TODO: Make print of accuracy and loss to be dataset agnostic
           if config.dataset == 'mnist':
             samples, d_loss, g_loss = self.sess.run(
               [self.sampler, self.d_loss, self.g_loss],
@@ -459,6 +466,7 @@ class DCGAN(object):
 
         return tf.nn.sigmoid(deconv2d(h2, [self.batch_size, s_h, s_w, self.c_dim], name='g_h3'))
 
+  # Separate MNIST dataset class
   def load_mnist(self):
     data_dir = os.path.join(self.data_dir, self.dataset_name)
     

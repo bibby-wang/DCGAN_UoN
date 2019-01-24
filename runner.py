@@ -74,4 +74,5 @@ class Runner():
 
         OPTION = 1
         visualize(sess, dcgan, model_config, OPTION)
-    
+
+        self.sess.close()
