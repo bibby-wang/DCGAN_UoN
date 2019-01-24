@@ -1,4 +1,6 @@
 import os
+import sys
+import argparse
 import scipy.misc
 import numpy as np
 
@@ -7,85 +9,130 @@ from utils import pp, visualize, to_json, show_all_variables
 
 import tensorflow as tf
 
-flags = tf.app.flags
-flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
-flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
-flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
-flags.DEFINE_float("train_size", np.inf, "The size of train images [np.inf]")
-flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
-flags.DEFINE_integer("input_height", 108, "The size of image to use (will be center cropped). [108]")
-flags.DEFINE_integer("input_width", None, "The size of image to use (will be center cropped). If None, same value as input_height [None]")
-flags.DEFINE_integer("output_height", 64, "The size of the output images to produce [64]")
-flags.DEFINE_integer("output_width", None, "The size of the output images to produce. If None, same value as output_height [None]")
-flags.DEFINE_string("dataset", "celebA", "The name of dataset [celebA, mnist, lsun]")
-flags.DEFINE_string("input_fname_pattern", "*.jpg", "Glob pattern of filename of input images [*]")
-flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
-flags.DEFINE_string("data_dir", "./data", "Root directory of dataset [data]")
-flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
-flags.DEFINE_boolean("train", False, "True for training, False for testing [False]")
-flags.DEFINE_boolean("crop", False, "True for training, False for testing [False]")
-flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
-flags.DEFINE_integer("generate_test_images", 100, "Number of images to generate during test. [100]")
-FLAGS = flags.FLAGS
+class ModelConfig():
+  def __init__(self, epoch=25,
+                     learning_rate=0.0002,
+                     beta1=0.5,
+                     train_size=np.inf,
+                     batch_size=64,
+                     input_height=108,
+                     input_width=None,
+                     output_height=64,
+                     output_width=None,
+                     dataset="celebA",
+                     input_fname_pattern="*.jpg",
+                     checkpoint_dir="checkpoint",
+                     data_dir="data",
+                     sample_dir="samples",
+                     train=False,
+                     crop=False,
+                     visualize=False,
+                     generate_test_images=100):
+    self.epoch = epoch
+    self.learning_rate = learning_rate
+    self.beta1 = beta1
+    self.train_size = train_size
+    self.batch_size = batch_size
+    self.input_height = input_height
+    self.input_width = input_width
+    self.output_height = output_height
+    self.output_width = output_width
+    self.dataset = dataset
+    self.input_fname_pattern = input_fname_pattern
+    self.checkpoint_dir = checkpoint_dir
+    self.data_dir = data_dir
+    self.sample_dir = sample_dir
+    self.train = train
+    self.crop = crop
+    self.visualize = visualize
+    self.generate_test_images = generate_test_images
 
-def main(_):
-  pp.pprint(flags.FLAGS.__flags)
+def main():
 
-  if FLAGS.input_width is None:
-    FLAGS.input_width = FLAGS.input_height
-  if FLAGS.output_width is None:
-    FLAGS.output_width = FLAGS.output_height
+  # process input arguments
+  # --dataset [mnist, celebA]
+  # --input_height=[size]
+  # --output_height=[size]
+  # --train
+  # --crop
 
-  if not os.path.exists(FLAGS.checkpoint_dir):
-    os.makedirs(FLAGS.checkpoint_dir)
-  if not os.path.exists(FLAGS.sample_dir):
-    os.makedirs(FLAGS.sample_dir)
+  # create a parser of the command line
+  parser = argparse.ArgumentParser(description="Runs DCGAN on either mnist or celebA dataset")
+  parser.add_argument('--dataset', dest='dataset', choices=["mnist", "celebA"], type=str, default='celebA')
+  parser.add_argument('--input_height=', dest="input_height", type=int)
+  parser.add_argument('--output_height=', dest="output_height", type=int)
+  parser.add_argument('--train', dest="train", action='store_true')
+  parser.add_argument('--crop', dest="crop", action='store_true')
+  args = parser.parse_args()
+
+  model_config = ModelConfig()
+  model_config.dataset = args.dataset
+  model_config.input_height = args.input_height
+  model_config.output_height = args.output_height
+  model_config.train = args.train
+  model_config.crop = args.crop
+
+  print(args)
+
+  if model_config.input_width is None:
+    model_config.input_width = model_config.input_height
+
+  if model_config.output_width is None:
+    model_config.output_width = model_config.output_height
+
+  if not os.path.exists(model_config.checkpoint_dir):
+    os.makedirs(model_config.checkpoint_dir)
+  if not os.path.exists(model_config.sample_dir):
+    os.makedirs(model_config.sample_dir)
 
   #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
   run_config = tf.ConfigProto()
   run_config.gpu_options.allow_growth=True
 
+  # reset tensorflow graph, enables re-running model withour restarting the kernel
+  tf.reset_default_graph()
+
   with tf.Session(config=run_config) as sess:
-    if FLAGS.dataset == 'mnist':
+    if model_config.dataset == 'mnist':
       dcgan = DCGAN(
           sess,
-          input_width=FLAGS.input_width,
-          input_height=FLAGS.input_height,
-          output_width=FLAGS.output_width,
-          output_height=FLAGS.output_height,
-          batch_size=FLAGS.batch_size,
-          sample_num=FLAGS.batch_size,
+          input_width=model_config.input_width,
+          input_height=model_config.input_height,
+          output_width=model_config.output_width,
+          output_height=model_config.output_height,
+          batch_size=model_config.batch_size,
+          sample_num=model_config.batch_size,
           y_dim=10,
-          z_dim=FLAGS.generate_test_images,
-          dataset_name=FLAGS.dataset,
-          input_fname_pattern=FLAGS.input_fname_pattern,
-          crop=FLAGS.crop,
-          checkpoint_dir=FLAGS.checkpoint_dir,
-          sample_dir=FLAGS.sample_dir,
-          data_dir=FLAGS.data_dir)
+          z_dim=model_config.generate_test_images,
+          dataset_name=model_config.dataset,
+          input_fname_pattern=model_config.input_fname_pattern,
+          crop=model_config.crop,
+          checkpoint_dir=model_config.checkpoint_dir,
+          sample_dir=model_config.sample_dir,
+          data_dir=model_config.data_dir)
     else:
       dcgan = DCGAN(
           sess,
-          input_width=FLAGS.input_width,
-          input_height=FLAGS.input_height,
-          output_width=FLAGS.output_width,
-          output_height=FLAGS.output_height,
-          batch_size=FLAGS.batch_size,
-          sample_num=FLAGS.batch_size,
-          z_dim=FLAGS.generate_test_images,
-          dataset_name=FLAGS.dataset,
-          input_fname_pattern=FLAGS.input_fname_pattern,
-          crop=FLAGS.crop,
-          checkpoint_dir=FLAGS.checkpoint_dir,
-          sample_dir=FLAGS.sample_dir,
-          data_dir=FLAGS.data_dir)
+          input_width=model_config.input_width,
+          input_height=model_config.input_height,
+          output_width=model_config.output_width,
+          output_height=model_config.output_height,
+          batch_size=model_config.batch_size,
+          sample_num=model_config.batch_size,
+          z_dim=model_config.generate_test_images,
+          dataset_name=model_config.dataset,
+          input_fname_pattern=model_config.input_fname_pattern,
+          crop=model_config.crop,
+          checkpoint_dir=model_config.checkpoint_dir,
+          sample_dir=model_config.sample_dir,
+          data_dir=model_config.data_dir)
 
     show_all_variables()
 
-    if FLAGS.train:
-      dcgan.train(FLAGS)
+    if model_config.train:
+      dcgan.train(model_config)
     else:
-      if not dcgan.load(FLAGS.checkpoint_dir)[0]:
+      if not dcgan.load(model_config.checkpoint_dir)[0]:
         raise Exception("[!] Train a model first, then run test mode")
       
 
@@ -97,7 +144,7 @@ def main(_):
 
     # Below is codes for visualization
     OPTION = 1
-    visualize(sess, dcgan, FLAGS, OPTION)
+    visualize(sess, dcgan, model_config, OPTION)
 
 if __name__ == '__main__':
-  tf.app.run()
+  main()
