@@ -77,7 +77,7 @@ class DCGAN(object):
     # TODO: make dataset agnostic
     self.data_X = self.dataset.data_x
     self.data_y = self.dataset.data_y
-    self.c_dim = self.data_X[0].shape[-1]
+    self.c_dim = self.dataset.c_dim
     # if self.dataset_name == 'mnist':
     #   # self.data_X, self.data_y = self.load_mnist()
     #   # self.c_dim = self.data_X[0].shape[-1]
@@ -177,7 +177,8 @@ class DCGAN(object):
     
     # TODO: separate batching of dataset and pre-processing
     sample_inputs = self.data_X[0:self.sample_num]
-    sample_labels = self.data_y[0:self.sample_num]  # sample labels when dealing with DCGANS
+    if self.data_y is not None:
+      sample_labels = self.data_y[0:self.sample_num]  # sample labels when dealing with DCGANS
                                                     # TODO: celebA does not use conditions
     # if config.dataset == 'mnist':
     #   sample_inputs = self.data_X[0:self.sample_num]

@@ -16,7 +16,7 @@ from model import DCGAN
 
 class Runner():
 
-    def __init__(self, model_config, dataset):
+    def __init__(self, model_config, dataset, model=None):
         #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth=True
@@ -72,6 +72,12 @@ class Runner():
         else:
           if not self.model.load(self.model_config.checkpoint_dir)[0]:
             raise Exception("[!] Train a model first, then run test mode")
+
+      # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
+      #                 [dcgan.h1_w, dcgan.h1_b, dcgan.g_bn1],
+      #                 [dcgan.h2_w, dcgan.h2_b, dcgan.g_bn2],
+      #                 [dcgan.h3_w, dcgan.h3_b, dcgan.g_bn3],
+      #                 [dcgan.h4_w, dcgan.h4_b, None])
 
         OPTION = 1
         visualize(sess, dcgan, model_config, OPTION)

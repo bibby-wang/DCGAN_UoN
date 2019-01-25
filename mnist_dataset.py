@@ -13,8 +13,11 @@ class MNIST():
     def __init__(self, data_dir=None, batch_size=None):
         self.y_dim = 10 # TODO: Hardcoded number of classifications
         self.data_dir = data_dir
-        self.data_x, self.data_y = self.load_mnist()
+        self.data_x, self.data_y, self.c_dim = self.load_mnist()
         self.batch_size = batch_size
+        self.input_height = 28
+        self.output_height = 28
+        self.crop = False
 
     def load_mnist(self):
         # data_dir = os.path.join(self.data_dir, self.dataset_name)
@@ -56,4 +59,4 @@ class MNIST():
         for i, label in enumerate(y):
           y_vec[i,y[i]] = 1.0
 
-        return X/255.,y_vec
+        return X/255., y_vec, 1 # normalized data_x, data_y, image channel
