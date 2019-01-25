@@ -16,7 +16,7 @@ from model import DCGAN
 
 class Runner():
 
-    def __init__(self, model_config):
+    def __init__(self, model_config, dataset):
         #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth=True
@@ -45,7 +45,8 @@ class Runner():
             crop=model_config.crop,
             checkpoint_dir=model_config.checkpoint_dir,
             sample_dir=model_config.sample_dir,
-            data_dir=model_config.data_dir)
+            data_dir=model_config.data_dir,
+            dataset=dataset)
         # else:
         #   self.model = DCGAN(
         #       self.sess,

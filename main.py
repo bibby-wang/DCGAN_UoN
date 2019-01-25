@@ -1,7 +1,9 @@
 import os
 import sys
 import argparse
+import numpy as np
 from runner import Runner
+from mnist_dataset import MNIST
 
 import tensorflow as tf
 
@@ -91,7 +93,8 @@ def main():
   # # reset tensorflow graph, enables re-running model withour restarting the kernel
   # tf.reset_default_graph()
 
-  runner = Runner(model_config)
+  dataset = MNIST("./data/mnist")
+  runner = Runner(model_config, dataset)
   runner.start_training()
 
   # with tf.Session(config=run_config) as sess:
