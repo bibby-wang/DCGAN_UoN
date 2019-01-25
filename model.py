@@ -74,27 +74,9 @@ class DCGAN(object):
     # store dataset
     self.dataset = dataset
 
-    # TODO: make dataset agnostic
     self.data_X = self.dataset.data_x
     self.data_y = self.dataset.data_y
     self.c_dim = self.dataset.c_dim
-    # if self.dataset_name == 'mnist':
-    #   # self.data_X, self.data_y = self.load_mnist()
-    #   # self.c_dim = self.data_X[0].shape[-1]
-    # else:
-    #   data_path = os.path.join(self.data_dir, self.dataset_name, self.input_fname_pattern)
-    #   self.data = glob(data_path)
-    #   if len(self.data) == 0:
-    #     raise Exception("[!] No data found in '" + data_path + "'")
-    #   np.random.shuffle(self.data)
-    #   imreadImg = imread(self.data[0])
-    #   if len(imreadImg.shape) >= 3: #check if image is a non-grayscale image by checking channel number
-    #     self.c_dim = imread(self.data[0]).shape[-1]
-    #   else:
-    #     self.c_dim = 1
-
-    #   if len(self.data) < self.batch_size:
-    #     raise Exception("[!] Entire dataset size is less than the configured batch_size")
     
     self.grayscale = (self.c_dim == 1)
 
@@ -179,7 +161,7 @@ class DCGAN(object):
     sample_inputs = self.data_X[0:self.sample_num]
     if self.data_y is not None:
       sample_labels = self.data_y[0:self.sample_num]  # sample labels when dealing with DCGANS
-                                                    # TODO: celebA does not use conditions
+
     # if config.dataset == 'mnist':
     #   sample_inputs = self.data_X[0:self.sample_num]
     #   sample_labels = self.data_y[0:self.sample_num]
@@ -209,35 +191,42 @@ class DCGAN(object):
 
     for epoch in xrange(config.epoch):
       # TODO: make dataset agnostic
-      if config.dataset == 'mnist':
-        batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
-      else:      
-        self.data = glob(os.path.join(
-          config.data_dir, config.dataset, self.input_fname_pattern))
-        np.random.shuffle(self.data)
-        batch_idxs = min(len(self.data), config.train_size) // config.batch_size
+      batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
+      # if config.dataset == 'mnist':
+      #   batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
+      # else:      
+      #   self.data = glob(os.path.join(
+      #     config.data_dir, config.dataset, self.input_fname_pattern))
+      #   np.random.shuffle(self.data)
+      #   batch_idxs = min(len(self.data), config.train_size) // config.batch_size
 
       for idx in xrange(0, int(batch_idxs)):
 
         # TODO: separate batching of dataset and pre-processing
         # Transition to tf.Dataset mini batch
-        if config.dataset == 'mnist':
-          batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
+
+        batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
+
+        if self.data_y is not None:
           batch_labels = self.data_y[idx*config.batch_size:(idx+1)*config.batch_size]
-        else:
-          batch_files = self.data[idx*config.batch_size:(idx+1)*config.batch_size]
-          batch = [
-              get_image(batch_file,
-                        input_height=self.input_height,
-                        input_width=self.input_width,
-                        resize_height=self.output_height,
-                        resize_width=self.output_width,
-                        crop=self.crop,
-                        grayscale=self.grayscale) for batch_file in batch_files]
-          if self.grayscale:
-            batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
-          else:
-            batch_images = np.array(batch).astype(np.float32)
+
+        # if config.dataset == 'mnist':
+        #   batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
+        #   batch_labels = self.data_y[idx*config.batch_size:(idx+1)*config.batch_size]
+        # else:
+        #   batch_files = self.data[idx*config.batch_size:(idx+1)*config.batch_size]
+        #   batch = [
+        #       get_image(batch_file,
+        #                 input_height=self.input_height,
+        #                 input_width=self.input_width,
+        #                 resize_height=self.output_height,
+        #                 resize_width=self.output_width,
+        #                 crop=self.crop,
+        #                 grayscale=self.grayscale) for batch_file in batch_files]
+        #   if self.grayscale:
+        #     batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
+        #   else:
+        #     batch_images = np.array(batch).astype(np.float32)
 
         batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
               .astype(np.float32)

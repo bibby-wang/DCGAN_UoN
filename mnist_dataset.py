@@ -17,6 +17,8 @@ class MNIST():
         self.batch_size = batch_size
         self.input_height = 28
         self.output_height = 28
+        self.input_width = 28
+        self.output_width = 28
         self.crop = False
 
     def load_mnist(self):
