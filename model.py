@@ -85,6 +85,7 @@ class DCGAN(object):
     self.build_model()
 
   def build_model(self):
+    # TODO: make basis on conditional flag, instead of y_dim
     if self.y_dim:
       self.y = tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
     else:
@@ -195,9 +196,24 @@ class DCGAN(object):
     else:
       print(" [!] Load failed...")
 
-    for epoch in xrange(config.epoch):
+    # TODO: Put this in the mnist_dataset class
+    x_ph = tf.placeholder(self.dataset.data_x.dtype, self.dataset.data_x.shape, name="x_ph2")
+    y_ph = tf.placeholder(self.dataset.data_y.dtype, self.dataset.data_y.shape, name="y_ph2")
+    tf_dataset = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
+
+    tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
+    tf_dataset = tf_dataset.repeat(config.epoch)
+    it = tf_dataset.make_initializable_iterator()
+    get_next = it.get_next()
+    self.sess.run(it.initializer, feed_dict={
+      x_ph: self.dataset.data_x,
+      y_ph: self.dataset.data_y
+    })
+
+    for epoch in range(config.epoch):
       # TODO: make dataset agnostic
       batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
+
       # if config.dataset == 'mnist':
       #   batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
       # else:      
@@ -206,15 +222,17 @@ class DCGAN(object):
       #   np.random.shuffle(self.data)
       #   batch_idxs = min(len(self.data), config.train_size) // config.batch_size
 
-      for idx in xrange(0, int(batch_idxs)):
+      for idx in range(0, int(batch_idxs)):
 
         # TODO: separate batching of dataset and pre-processing
         # Transition to tf.Dataset mini batch
 
-        batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
+        batch_images, batch_labels = self.sess.run(get_next)
 
-        if self.data_y is not None:
-          batch_labels = self.data_y[idx*config.batch_size:(idx+1)*config.batch_size]
+        # batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
+
+        # if self.data_y is not None:
+        #     batch_labels = self.data_y[idx*config.batch_size:(idx+1)*config.batch_size]
 
         # if config.dataset == 'mnist':
         #   batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]

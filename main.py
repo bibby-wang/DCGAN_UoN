@@ -50,7 +50,7 @@ class ModelConfig():
 
 def main():
 
-    dataset = MNIST("./data/mnist")
+    dataset = MNIST("./data/mnist", batch_size=64)
     # dataset = CelebA(data_dir="./data/celebA")
 
     # process input arguments

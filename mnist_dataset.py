@@ -69,10 +69,11 @@ class MNIST():
 
     def create_tf_dataset(self):
         # Tensorflow Dataset
-        x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape)
-        y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape)
+        x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="x_ph")
+        y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
 
-        dataset_x = tf.data.Dataset.from_tensors((x_ph, y_ph))
+        dataset_x = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
+        # dataset_x = tf.data.Dataset.from_tensors((self.data_x, self.data_y))
 
         sample_dim_x = self.data_x[:self.sample_num]
         sample_dim_y = self.data_y[:self.sample_num]
