@@ -10,7 +10,7 @@ import tensorflow as tf
 
 class MNIST():
 
-    def __init__(self, data_dir=None, batch_size=None):
+    def __init__(self, data_dir=None, batch_size=None, sample_num=64):
         self.y_dim = 10 # TODO: Hardcoded number of classifications
         self.data_dir = data_dir
         self.data_x, self.data_y, self.c_dim = self.load_mnist()
@@ -20,9 +20,11 @@ class MNIST():
         self.input_width = 28
         self.output_width = 28
         self.crop = False
+        self.sample_num = sample_num
+
+        self.tf_dataset, self.tf_sample = self.create_tf_dataset()
 
     def load_mnist(self):
-        # data_dir = os.path.join(self.data_dir, self.dataset_name)
 
         # training data
         fd = open(os.path.join(self.data_dir,'train-images-idx3-ubyte'))
@@ -44,9 +46,11 @@ class MNIST():
         loaded = np.fromfile(file=fd,dtype=np.uint8)
         teY = loaded[8:].reshape((10000)).astype(np.float)
 
+
         trY = np.asarray(trY)
         teY = np.asarray(teY)
 
+        # Combine Training and Test data
         X = np.concatenate((trX, teX), axis=0)
         y = np.concatenate((trY, teY), axis=0).astype(np.int)
 
@@ -62,3 +66,22 @@ class MNIST():
           y_vec[i,y[i]] = 1.0
 
         return X/255., y_vec, 1 # normalized data_x, data_y, image channel
+
+    def create_tf_dataset(self):
+        # Tensorflow Dataset
+        x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape)
+        y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape)
+
+        dataset_x = tf.data.Dataset.from_tensors((x_ph, y_ph))
+
+        sample_dim_x = self.data_x[:self.sample_num]
+        sample_dim_y = self.data_y[:self.sample_num]
+        sample = tf.data.Dataset.from_tensors((sample_dim_x, sample_dim_y))
+
+        return dataset_x, sample
+
+    def get_sample_dataset(self, sess):
+        it = self.tf_sample.make_one_shot_iterator()
+        next = it.get_next()
+        data = sess.run(next)
+        return data

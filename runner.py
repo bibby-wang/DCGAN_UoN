@@ -80,6 +80,6 @@ class Runner():
       #                 [dcgan.h4_w, dcgan.h4_b, None])
 
         OPTION = 1
-        visualize(sess, dcgan, model_config, OPTION)
+        visualize(self.sess, self.model, self.model_config, OPTION)
 
         self.sess.close()
