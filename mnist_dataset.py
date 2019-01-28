@@ -67,22 +67,38 @@ class MNIST():
 
         return X/255., y_vec, 1 # normalized data_x, data_y, image channel
 
-    def create_tf_dataset(self):
+    def create_tf_dataset(self, scope=None):
         # Tensorflow Dataset
-        x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="x_ph")
-        y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
+        with tf.variable_scope(scope or "datasets"):
+            x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="x_ph")
+            y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
 
-        dataset_x = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
-        # dataset_x = tf.data.Dataset.from_tensors((self.data_x, self.data_y))
+            dataset_x = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
+            # dataset_x = tf.data.Dataset.from_tensors((self.data_x, self.data_y))
 
-        sample_dim_x = self.data_x[:self.sample_num]
-        sample_dim_y = self.data_y[:self.sample_num]
-        sample = tf.data.Dataset.from_tensors((sample_dim_x, sample_dim_y))
+            sample_dim_x = self.data_x[:self.sample_num]
+            sample_dim_y = self.data_y[:self.sample_num]
+            sample = tf.data.Dataset.from_tensors((sample_dim_x, sample_dim_y))
 
         return dataset_x, sample
 
-    def get_sample_dataset(self, sess):
-        it = self.tf_sample.make_one_shot_iterator()
-        next = it.get_next()
-        data = sess.run(next)
+    def get_sample_dataset(self, sess, scope=None):
+        with tf.variable_scope(scope or "datasets"):
+            it = self.tf_sample.make_one_shot_iterator()
+            next = it.get_next()
+            data = sess.run(next)
         return data
+
+    def get_batch_dataset(self, sess, epoch, scope=None):
+        with tf.variable_scope(scope or "datasets"):
+            x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="x_ph")
+            y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
+            tf_dataset = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
+            tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
+            tf_dataset = tf_dataset.repeat(epoch)
+            it = tf_dataset.make_initializable_iterator()
+            sess.run(it.initializer, feed_dict={
+                x_ph: self.data_x,
+                y_ph: self.data_y
+            })
+        return it.get_next()
