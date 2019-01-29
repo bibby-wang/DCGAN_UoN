@@ -63,8 +63,9 @@ class MNIST():
         y_vec = np.zeros((len(y), self.y_dim), dtype=np.float)
 
         for i, label in enumerate(y):
-          y_vec[i,y[i]] = 1.0
+            y_vec[i,y[i]] = 1.0
 
+        # inputs, labels, channels
         return X/255., y_vec, 1 # normalized data_x, data_y, image channel
 
     def create_tf_dataset(self, scope=None):
@@ -74,7 +75,6 @@ class MNIST():
             y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
 
             dataset_x = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
-            # dataset_x = tf.data.Dataset.from_tensors((self.data_x, self.data_y))
 
             sample_dim_x = self.data_x[:self.sample_num]
             sample_dim_y = self.data_y[:self.sample_num]

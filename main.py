@@ -50,9 +50,6 @@ class ModelConfig():
 
 def main():
 
-    dataset = MNIST("./data/mnist", batch_size=64)
-    # dataset = CelebA(data_dir="./data/celebA")
-
     # process input arguments
     # --dataset [mnist, celebA]
     # --input_height=[size]
@@ -69,11 +66,19 @@ def main():
     # parser.add_argument('--crop', dest="crop", action='store_true')
     args = parser.parse_args()
 
+
     model_config = ModelConfig()
     model_config.dataset = args.dataset
+    model_config.train = args.train
+
+    if model_config.dataset == 'mnist':
+        model_config.y_dim = 10
+        dataset = MNIST("./data/mnist", batch_size=64)
+    elif model_config.dataset == 'celebA':
+        dataset = CelebA(data_dir="./data/celebA", crop=model_config.crop)
+
     model_config.input_height = dataset.input_height
     model_config.output_height = dataset.output_height
-    model_config.train = args.train
     model_config.crop = dataset.crop
 
     if not os.path.exists(model_config.checkpoint_dir):
@@ -86,9 +91,6 @@ def main():
 
     if model_config.output_width is None:
         model_config.output_width = model_config.output_height
-
-    if model_config.dataset == 'mnist':
-        model_config.y_dim = 10
 
     runner = Runner(model_config, dataset)
     runner.start_training()

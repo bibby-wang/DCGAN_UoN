@@ -167,7 +167,10 @@ class DCGAN(object):
     # if self.data_y is not None:
     #   sample_labels = self.data_y[0:self.sample_num]  # sample labels when dealing with DCGANS
 
-    sample_inputs, sample_labels = self.dataset.get_sample_dataset(self.sess)
+    if self.y_dim is not None:
+        sample_inputs, sample_labels = self.dataset.get_sample_dataset(self.sess)
+    else:
+        sample_inputs= self.dataset.get_sample_dataset(self.sess)
 
     # if config.dataset == 'mnist':
     #   sample_inputs = self.data_X[0:self.sample_num]
@@ -219,7 +222,10 @@ class DCGAN(object):
         # TODO: Add compatibility for celebA dataset
         # Transition to tf.Dataset mini batch
 
-        batch_images, batch_labels = self.sess.run(get_next)
+        if self.y_dim is not None:
+            batch_images, batch_labels = self.sess.run(get_next)
+        else:
+            batch_images = self.sess.run(get_next)
 
         # if config.dataset == 'mnist':
         #   batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
