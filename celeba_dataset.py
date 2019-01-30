@@ -19,9 +19,9 @@ class CelebA():
         self.batch_size = batch_size
         self.fname_extension = "*.jpg"
         self.input_height = 108
-        self.output_height = 108
+        self.output_height = 64
         self.input_width = 108
-        self.output_width = 108
+        self.output_width = 64
         self.crop = crop
         self.grayscale = grayscale
         self.sample_num = sample_num
@@ -133,7 +133,17 @@ class CelebA():
             img_string = tf.read_file(filename)
             img_decoded = tf.image.decode_jpeg(img_string)
             if self.crop:
-                img = tf.image.resize_image_with_crop_or_pad(image_decoded, self.output_height, self.output_width)
+                # TODO: Copy the central crop utility function in utils.py
+                h, w = img_decoded.shape[1:3]
+                print("h: ", h)
+                print("w: ", w)
+                j = h - 108 // 2
+                i = w - 108 // 2
+                img = tf.image.crop_and_resize(
+                    image=img_decoded,
+                    boxes= ,
+                    box_ind=,
+                    crop_size=[self.output_height, self.output_width])
             else:
                 img = tf.image.resize_images(img_decoded, [self.output_height, self.output_width])
         return img

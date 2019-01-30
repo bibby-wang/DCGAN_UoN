@@ -75,6 +75,7 @@ def main():
         model_config.y_dim = 10
         dataset = MNIST("./data/mnist", batch_size=64)
     elif model_config.dataset == 'celebA':
+        model_config.crop = True
         dataset = CelebA(data_dir="./data/celebA", crop=model_config.crop)
 
     model_config.input_height = dataset.input_height
