@@ -163,7 +163,6 @@ class DCGAN(object):
     
     # TODO: separate batching of dataset and pre-processing
     # sample_inputs = self.data_X[0:self.sample_num]
-    # print(sample_inputs)
     # if self.data_y is not None:
     #   sample_labels = self.data_y[0:self.sample_num]  # sample labels when dealing with DCGANS
 

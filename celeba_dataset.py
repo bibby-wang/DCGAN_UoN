@@ -82,7 +82,7 @@ class CelebA():
         with tf.variable_scope(scope or "datasets"):
             # x_ph = tf.placeholder(tf.string, np.array(self.data_x).shape, name="x_ph")
             dataset_x = tf.data.Dataset.from_tensor_slices(self.data_x)
-            dataset_x = dataset_x.map(self._read_parse)
+            dataset_x = dataset_x.map(self._read_transform)
             # dataset_x = dataset_x.map(lambda x: get_image(
             #   x,
             #   input_height=self.input_height,
@@ -92,9 +92,9 @@ class CelebA():
             #   crop=self.crop,
             #   grayscale=self.grayscale))
 
-            sample_x = self.data_x[:self.sample_num]
+            sample_x = tf.constant(self.data_x[:self.sample_num])
             sample = tf.data.Dataset.from_tensor_slices(sample_x)
-            sample = sample.map(self._read_parse)
+            sample = sample.map(self._read_transform)
             # sample = sample.map(lambda x: get_image(
             #   x,
             #   input_height=self.input_height,
@@ -109,8 +109,8 @@ class CelebA():
     def get_sample_dataset(self, sess, scope=None):
         with tf.variable_scope(scope or "datasets"):
             it = self.tf_sample.make_one_shot_iterator()
-            next = it.get_next()
-            data = sess.run(next)
+            next_elem = it.get_next()
+            data = np.array([sess.run(next_elem) for _ in range(self.sample_num)])
         return data
 
     def get_batch_dataset(self, sess, epoch, scope=None):
@@ -128,22 +128,18 @@ class CelebA():
             # })
         return it.get_next()
     
-    def _read_parse(self, filename,scope=None):
+    def _read_transform(self, filename,scope=None):
         with tf.variable_scope(scope or "datasets"):
             img_string = tf.read_file(filename)
             img_decoded = tf.image.decode_jpeg(img_string)
             if self.crop:
-                # TODO: Copy the central crop utility function in utils.py
-                h, w = img_decoded.shape[1:3]
-                print("h: ", h)
-                print("w: ", w)
-                j = h - 108 // 2
-                i = w - 108 // 2
-                img = tf.image.crop_and_resize(
+                # img = tf.image.central_crop(img_decoded, 0.5)
+                img_decoded = tf.image.crop_to_bounding_box(
                     image=img_decoded,
-                    boxes= ,
-                    box_ind=,
-                    crop_size=[self.output_height, self.output_width])
-            else:
-                img = tf.image.resize_images(img_decoded, [self.output_height, self.output_width])
-        return img
+                    offset_height=55,
+                    offset_width=35,
+                    target_height=108,
+                    target_width=108
+                )
+            img = tf.image.resize_images(img_decoded, [self.output_height, self.output_width])
+        return tf.subtract(tf.divide(img, 127.5), 1)
