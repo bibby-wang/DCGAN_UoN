@@ -13,7 +13,7 @@ from glob import glob
 
 class CelebA():
 
-    def __init__(self, data_dir, batch_size=64, grayscale=False, sample_num=64, crop=False):
+    def __init__(self, data_dir, batch_size=64, grayscale=False, sample_num=64, crop=True):
         # self.y_dim = 10 # TODO: Hardcoded number of classifications
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -49,7 +49,7 @@ class CelebA():
         if len(data_x) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")
 
-        np.random.shuffle(data_x)
+        # np.random.shuffle(data_x)
 
         imreadImg = imread(data_x[0])
 
@@ -80,30 +80,11 @@ class CelebA():
         Create the tf.data.Dataset for the training and samples datasets
         """
         with tf.variable_scope(scope or "datasets"):
-            # x_ph = tf.placeholder(tf.string, np.array(self.data_x).shape, name="x_ph")
             dataset_x = tf.data.Dataset.from_tensor_slices(self.data_x)
             dataset_x = dataset_x.map(self._read_transform)
-            # dataset_x = dataset_x.map(lambda x: get_image(
-            #   x,
-            #   input_height=self.input_height,
-            #   input_width=self.input_width,
-            #   resize_height=self.output_height,
-            #   resize_width=self.output_width,
-            #   crop=self.crop,
-            #   grayscale=self.grayscale))
-
             sample_x = tf.constant(self.data_x[:self.sample_num])
             sample = tf.data.Dataset.from_tensor_slices(sample_x)
             sample = sample.map(self._read_transform)
-            # sample = sample.map(lambda x: get_image(
-            #   x,
-            #   input_height=self.input_height,
-            #   input_width=self.input_width,
-            #   resize_height=self.output_height,
-            #   resize_width=self.output_width,
-            #   crop=self.crop,
-            #   grayscale=self.grayscale))
-
         return dataset_x, sample
 
     def get_sample_dataset(self, sess, scope=None):
@@ -115,17 +96,10 @@ class CelebA():
 
     def get_batch_dataset(self, sess, epoch, scope=None):
         with tf.variable_scope(scope or "datasets"):
-            # x_ph = tf.placeholder(tf.string, self.data_x, name="x_ph")
-            # y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
-            # tf_dataset = tf.data.Dataset.from_tensor_slices(x_ph)
-            tf_dataset = self.tf_dataset.batch(self.batch_size, drop_remainder=True)
+            tf_dataset =self.tf_dataset.shuffle(100, reshuffle_each_iteration=True)
+            tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
             tf_dataset = tf_dataset.repeat(epoch)
-            # it = tf_dataset.make_initializable_iterator()
             it = tf_dataset.make_one_shot_iterator()
-            # sess.run(it.initializer, feed_dict={
-            #     x_ph: self.data_x,
-            #     # y_ph: self.data_y
-            # })
         return it.get_next()
     
     def _read_transform(self, filename,scope=None):
@@ -133,7 +107,6 @@ class CelebA():
             img_string = tf.read_file(filename)
             img_decoded = tf.image.decode_jpeg(img_string)
             if self.crop:
-                # img = tf.image.central_crop(img_decoded, 0.5)
                 img_decoded = tf.image.crop_to_bounding_box(
                     image=img_decoded,
                     offset_height=55,
@@ -142,4 +115,4 @@ class CelebA():
                     target_width=108
                 )
             img = tf.image.resize_images(img_decoded, [self.output_height, self.output_width])
-        return tf.subtract(tf.divide(img, 127.5), 1)
+        return tf.subtract(tf.divide(img, 125.38), 1.)  # compansate for difference in decoding jpeg images
