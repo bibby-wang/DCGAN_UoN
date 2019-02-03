@@ -8,26 +8,27 @@ from celeba_dataset import CelebA
 
 import tensorflow as tf
 
+
 class ModelConfig():
     def __init__(self, epoch=25,
-                       learning_rate=0.0002,
-                       beta1=0.5,
-                       train_size=np.inf,
-                       batch_size=64,
-                       input_height=108,
-                       input_width=None,
-                       output_height=64,
-                       output_width=None,
-                       dataset="celebA",
-                       input_fname_pattern="*.jpg",
-                       checkpoint_dir="checkpoint",
-                       data_dir="data",
-                       sample_dir="samples",
-                       train=True,
-                       crop=False,   # TODO: put this in dataset
-                       visualize=False, # Not being used
-                       generate_test_images=100,
-                       y_dim=None):
+                 learning_rate=0.0002,
+                 beta1=0.5,
+                 train_size=np.inf,
+                 batch_size=64,
+                 input_height=108,
+                 input_width=None,
+                 output_height=64,
+                 output_width=None,
+                 dataset="celebA",
+                 input_fname_pattern="*.jpg",
+                 checkpoint_dir="checkpoint",
+                 data_dir="data",
+                 sample_dir="samples",
+                 train=True,
+                 crop=False,   # TODO: put this in dataset
+                 visualize=False,  # Not being used
+                 generate_test_images=100,
+                 y_dim=None):
         self.epoch = epoch
         self.learning_rate = learning_rate
         self.beta1 = beta1
@@ -48,6 +49,7 @@ class ModelConfig():
         self.generate_test_images = generate_test_images
         self.y_dim = y_dim
 
+
 def main():
 
     # process input arguments
@@ -64,7 +66,6 @@ def main():
     # parser.add_argument('--crop', dest="crop", action='store_true')
     # args = parser.parse_args()
 
-
     model_config = ModelConfig()
     # model_config.dataset = args.dataset
     # model_config.train = args.train
@@ -72,12 +73,14 @@ def main():
     if model_config.dataset == 'mnist':
         model_config.y_dim = 10
         model_config.dataset = 'mnist'
-        data_dir = os.path.join(os.path.abspath(model_config.data_dir), 'mnist')
+        data_dir = os.path.join(os.path.abspath(
+            model_config.data_dir), 'mnist')
         dataset = MNIST(data_dir,
                         batch_size=64)
     elif model_config.dataset == 'celebA':
         model_config.crop = True
-        data_dir = os.path.join(os.path.abspath(model_config.data_dir), 'celebA')
+        data_dir = os.path.join(os.path.abspath(
+            model_config.data_dir), 'celebA')
         dataset = CelebA(data_dir,
                          crop=model_config.crop)
 
