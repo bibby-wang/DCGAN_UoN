@@ -23,9 +23,9 @@ class ModelConfig():
                        checkpoint_dir="checkpoint",
                        data_dir="data",
                        sample_dir="samples",
-                       train=False,
-                       crop=False,
-                       visualize=False,
+                       train=True,
+                       crop=False,   # TODO: put this in dataset
+                       visualize=False, # Not being used
                        generate_test_images=100,
                        y_dim=None):
         self.epoch = epoch
@@ -58,25 +58,28 @@ def main():
     # --crop
 
     # create a parser of the command line
-    parser = argparse.ArgumentParser(description="Runs DCGAN on either mnist or celebA dataset")
-    parser.add_argument('--dataset', dest='dataset', choices=["mnist", "celebA"], type=str, default='celebA')
-    # parser.add_argument('--input_height=', dest="input_height", default=108, type=int)
-    # parser.add_argument('--output_height=', dest="output_height", default=108, type=int)
-    parser.add_argument('--train', dest="train", action='store_true')
+    # parser = argparse.ArgumentParser(description="Runs DCGAN on either mnist or celebA dataset")
+    # parser.add_argument('--dataset', dest='dataset', choices=["mnist", "celebA"], type=str, default='celebA')
+    # parser.add_argument('--train', dest="train", action='store_true')
     # parser.add_argument('--crop', dest="crop", action='store_true')
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
 
     model_config = ModelConfig()
-    model_config.dataset = args.dataset
-    model_config.train = args.train
+    # model_config.dataset = args.dataset
+    # model_config.train = args.train
 
     if model_config.dataset == 'mnist':
         model_config.y_dim = 10
-        dataset = MNIST("./data/mnist", batch_size=64)
+        model_config.dataset = 'mnist'
+        data_dir = os.path.join(os.path.abspath(model_config.data_dir), 'mnist')
+        dataset = MNIST(data_dir,
+                        batch_size=64)
     elif model_config.dataset == 'celebA':
         model_config.crop = True
-        dataset = CelebA(data_dir="./data/celebA", crop=model_config.crop)
+        data_dir = os.path.join(os.path.abspath(model_config.data_dir), 'celebA')
+        dataset = CelebA(data_dir,
+                         crop=model_config.crop)
 
     model_config.input_height = dataset.input_height
     model_config.output_height = dataset.output_height
