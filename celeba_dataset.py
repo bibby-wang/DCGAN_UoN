@@ -11,6 +11,7 @@ import tensorflow as tf
 from utils import *
 from glob import glob
 
+
 class CelebA():
 
     def __init__(self, data_dir, batch_size=64, grayscale=False, sample_num=64, crop=True):
@@ -37,15 +38,6 @@ class CelebA():
         data_path = os.path.join(self.data_dir, self.fname_extension)
         data_x = glob(data_path)  # Get all filenames of images in data_path
 
-        # image preprocessing
-        # data_x = [get_image(image,
-        #               input_height=self.input_height,
-        #               input_width=self.input_width,
-        #               resize_height=self.output_height,
-        #               resize_width=self.output_width,
-        #               crop=self.crop,
-        #               grayscale=self.grayscale) for image in data_x]
-
         if len(data_x) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")
 
@@ -53,25 +45,15 @@ class CelebA():
 
         imreadImg = imread(data_x[0])
 
-        # if self.grayscale:
-        #   sample_inputs = np.array(sample).astype(np.float32)[:, :, :, None]
-        # else:
-        #   sample_inputs = np.array(sample).astype(np.float32)
-
         # check if image is a non-grayscale image by checking channel number
-        if len(imreadImg.shape) >= 3: 
+        if len(imreadImg.shape) >= 3:
             c_dim = imread(data_x[0]).shape[-1]
         else:
             c_dim = 1
 
-        # if c_dim == 1 and not self.grayscale:
-        #     self.grayscale = True
-        #     data_x = np.array(data_x).astype(np.float32)
-        # elif not self.grayscale:
-        #     data_x = np.array(sample).astype(np.float32)[:, :, :, None]
-
         if len(data_x) < self.batch_size:
-            raise Exception("[!] Entire dataset size is less than the configured batch_size")
+            raise Exception(
+                "[!] Entire dataset size is less than the configured batch_size")
 
         return data_x, data_y, c_dim
 
@@ -91,18 +73,20 @@ class CelebA():
         with tf.variable_scope(scope or "datasets"):
             it = self.tf_sample.make_one_shot_iterator()
             next_elem = it.get_next()
-            data = np.array([sess.run(next_elem) for _ in range(self.sample_num)])
+            data = np.array([sess.run(next_elem)
+                             for _ in range(self.sample_num)])
         return data
 
     def get_batch_dataset(self, sess, epoch, scope=None):
         with tf.variable_scope(scope or "datasets"):
-            tf_dataset =self.tf_dataset.shuffle(100, reshuffle_each_iteration=True)
+            tf_dataset = self.tf_dataset.shuffle(
+                100, reshuffle_each_iteration=True)
             tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
             tf_dataset = tf_dataset.repeat(epoch)
             it = tf_dataset.make_one_shot_iterator()
         return it.get_next()
-    
-    def _read_transform(self, filename,scope=None):
+
+    def _read_transform(self, filename, scope=None):
         with tf.variable_scope(scope or "datasets"):
             img_string = tf.read_file(filename)
             img_decoded = tf.image.decode_jpeg(img_string)
@@ -114,5 +98,7 @@ class CelebA():
                     target_height=108,
                     target_width=108
                 )
-            img = tf.image.resize_images(img_decoded, [self.output_height, self.output_width])
-        return tf.subtract(tf.divide(img, 125.38), 1.)  # compansate for difference in decoding jpeg images
+            img = tf.image.resize_images(
+                img_decoded, [self.output_height, self.output_width])
+        # compansate for difference in decoding jpeg images
+        return tf.subtract(tf.divide(img, 125.38), 1.)
