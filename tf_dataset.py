@@ -59,31 +59,28 @@ class TFDataset(abc.ABC):
     def create_tf_dataset(self, scope=None):
         raise NotImplementedError("load data is not implemented yet")
 
-    def get_sample_dataset(self, sess, scope=None):
+    def get_sample_dataset(self, sess):
         it = self.tf_sample.make_one_shot_iterator()
         next_elem = it.get_next()
         data = sess.run(next_elem)
         return data
 
-    @property
-    def get_batch_dataset(self):
-        with tf.variable_scope("datasets"):
+    def get_batch_dataset(self, sess):
 
-            tf_dataset = self.tf_dataset.shuffle(
-                100, reshuffle_each_iteration=True)
-            tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
-            tf_dataset = tf_dataset.repeat(self.epoch)
-            # it = tf_dataset.make_one_shot_iterator()
-            # it = tf_dataset.make_initializable_iterator()
-            if self.y_dim is not None:
-                data_dict = {
-                    self.data_x_ph: self.data_x,
-                    self.label_y_ph: self.data_y
-                }
-            else:
-                data_dict = {
-                    self.data_x_ph: self.data_x,
-                }
-            # sess.run(it.initializer, feed_dict=data_dict)
+        tf_dataset = self.tf_dataset.shuffle(
+            100, reshuffle_each_iteration=True)
+        tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
+        tf_dataset = tf_dataset.repeat(self.epoch)
+        it = tf_dataset.make_initializable_iterator()
+        if self.y_dim is not None:
+            data_dict = {
+                self.data_x_ph: self.data_x,
+                self.label_y_ph: self.data_y
+            }
+        else:
+            data_dict = {
+                self.data_x_ph: self.data_x,
+            }
+        sess.run(it.initializer, feed_dict=data_dict)
 
-        return tf_dataset, data_dict
+        return it.get_next()

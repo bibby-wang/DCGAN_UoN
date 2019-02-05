@@ -192,12 +192,8 @@ class DCGAN(object):
         else:
             print(" [!] Load failed...")
 
-        # Retrieve the batch iterator of the dataset
-        # TODO: Put this back into TFDataset class
-        batch_data, data_dict = self.dataset.get_batch_dataset
-        it = batch_data.make_initializable_iterator()
-        self.sess.run(it.initializer, data_dict)
-        get_next = it.get_next()
+        # Retrieve the iterator for batched datasets
+        get_next = self.dataset.get_batch_dataset(self.sess)
 
         batch_idxs = min(len(self.data_X),
                          config.train_size) // config.batch_size
