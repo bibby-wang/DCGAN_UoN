@@ -10,25 +10,39 @@ import tensorflow as tf
 
 from utils import *
 from glob import glob
+from tf_dataset import TFDataset
 
 
-class CelebA():
+class CelebA(TFDataset):
 
-    def __init__(self, data_dir, batch_size=64, grayscale=False, sample_num=64, crop=True):
-        # self.y_dim = 10 # TODO: Hardcoded number of classifications
-        self.data_dir = data_dir
-        self.batch_size = batch_size
-        self.fname_extension = "*.jpg"
-        self.input_height = 108
-        self.output_height = 64
-        self.input_width = 108
-        self.output_width = 64
+    def __init__(self, data_dir, epoch, batch_size=64, grayscale=False, sample_num=64, crop=True):
+
         self.crop = crop
         self.grayscale = grayscale
-        self.sample_num = sample_num
-        self.data_x, self.data_y, self.c_dim = self.load_data()
+        self.fname_extension="*.jpg"
 
-        self.tf_dataset, self.tf_sample = self.create_tf_dataset()
+        super(CelebA, self).__init__(
+            data_dir=data_dir,
+            batch_size=batch_size,
+            sample_num=sample_num,
+            epoch=epoch,
+            input_height=108,
+            input_width=108,
+            output_height=64,
+            output_width=64
+        )
+
+        # self.data_dir = data_dir
+        # self.batch_size = batch_size
+        # self.fname_extension = "*.jpg"
+        # self.input_height = 108
+        # self.output_height = 64
+        # self.input_width = 108
+        # self.output_width = 64
+        # self.sample_num = sample_num
+
+        # self.data_x, self.data_y, self.c_dim = self.load_data()
+        # self.tf_dataset, self.tf_sample = self.create_tf_dataset()
 
     def load_data(self):
         data_x = None
@@ -36,7 +50,11 @@ class CelebA():
         c_dim = None
 
         data_path = os.path.join(self.data_dir, self.fname_extension)
-        data_x = glob(data_path)  # Get all filenames of images in data_path
+
+        # TODO: all input filenames are read into memory. Make this to be computationally calculated
+        # such that only a portion of the filenames are read into memory and hence
+        # only a portion of pictures is read into memory as well
+        data_x = np.array(glob(data_path))  # Get all filenames of images in data_path
 
         if len(data_x) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")
@@ -57,36 +75,24 @@ class CelebA():
 
         return data_x, data_y, c_dim
 
+    @property
     def create_tf_dataset(self, scope=None):
         """
         Create the tf.data.Dataset for the training and samples datasets
         """
-        with tf.variable_scope(scope or "datasets"):
-            dataset_x = tf.data.Dataset.from_tensor_slices(self.data_x)
-            dataset_x = dataset_x.map(self._read_transform)
-            sample_x = tf.constant(self.data_x[:self.sample_num])
-            sample = tf.data.Dataset.from_tensor_slices(sample_x)
-            sample = sample.map(self._read_transform)
+
+        self.data_x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="data_x_ph")
+        dataset_x = tf.data.Dataset.from_tensor_slices((self.data_x_ph,))
+        dataset_x = dataset_x.map(self.__read_transform)
+
+        sample_x = self.data_x[:self.sample_num]
+        sample = tf.data.Dataset.from_tensor_slices((sample_x,))
+        sample = sample.map(self.__read_transform)
+        sample = sample.flat_map(lambda x: tf.data.Dataset.from_tensor_slices((x,)))
+
         return dataset_x, sample
 
-    def get_sample_dataset(self, sess, scope=None):
-        with tf.variable_scope(scope or "datasets"):
-            it = self.tf_sample.make_one_shot_iterator()
-            next_elem = it.get_next()
-            data = np.array([sess.run(next_elem)
-                             for _ in range(self.sample_num)])
-        return data
-
-    def get_batch_dataset(self, sess, epoch, scope=None):
-        with tf.variable_scope(scope or "datasets"):
-            tf_dataset = self.tf_dataset.shuffle(
-                100, reshuffle_each_iteration=True)
-            tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
-            tf_dataset = tf_dataset.repeat(epoch)
-            it = tf_dataset.make_one_shot_iterator()
-        return it.get_next()
-
-    def _read_transform(self, filename, scope=None):
+    def __read_transform(self, filename, scope=None):
         with tf.variable_scope(scope or "datasets"):
             img_string = tf.read_file(filename)
             img_decoded = tf.image.decode_jpeg(img_string)

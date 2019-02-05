@@ -39,18 +39,27 @@ class DCGAN(object):
             dfc_dim: (optional) Dimension of discrim units for fully connected layer. [1024]
             c_dim: (optional) Dimension of image color. For grayscale input, set to 1. [3]
         """
+        # store dataset
+        self.dataset = dataset
+
+        # TODO: make all reference to refer to the dataset object
+        self.data_X = self.dataset.data_x
+        self.data_y = self.dataset.data_y
+        self.c_dim = self.dataset.c_dim
+
         self.sess = sess
         self.crop = crop
 
         self.batch_size = batch_size
         self.sample_num = sample_num
 
+        # TODO: Refer to the dataset for input heights and widths
         self.input_height = input_height
         self.input_width = input_width
         self.output_height = output_height
         self.output_width = output_width
+        # self.y_dim = y_dim
 
-        self.y_dim = y_dim
         self.z_dim = z_dim
 
         self.gf_dim = gf_dim
@@ -59,20 +68,21 @@ class DCGAN(object):
         self.gfc_dim = gfc_dim
         self.dfc_dim = dfc_dim
 
+        # Flag if use conditional GAN for producing output images
         self.conditional = conditional
 
         # batch normalization : deals with poor initialization helps gradient flow
         self.d_bn1 = batch_norm(name='d_bn1')
         self.d_bn2 = batch_norm(name='d_bn2')
 
-        if not self.y_dim:
+        if not self.dataset.y_dim:
             self.d_bn3 = batch_norm(name='d_bn3')
 
         self.g_bn0 = batch_norm(name='g_bn0')
         self.g_bn1 = batch_norm(name='g_bn1')
         self.g_bn2 = batch_norm(name='g_bn2')
 
-        if not self.y_dim:
+        if not self.dataset.y_dim:
             self.g_bn3 = batch_norm(name='g_bn3')
 
         self.dataset_name = dataset_name
@@ -80,25 +90,21 @@ class DCGAN(object):
         self.checkpoint_dir = checkpoint_dir
         self.data_dir = data_dir
 
-        # store dataset
-        self.dataset = dataset
 
-        self.data_X = self.dataset.data_x
-        self.data_y = self.dataset.data_y
-        self.c_dim = self.dataset.c_dim
 
         self.grayscale = (self.c_dim == 1)
 
         self.build_model()
 
     def build_model(self):
-        # TODO: make basis on conditional flag, instead of y_dim
-        if self.y_dim:
+
+        if self.dataset.y_dim:
             self.y = tf.placeholder(
-                tf.float32, [self.batch_size, self.y_dim], name='y')
+                tf.float32, [self.batch_size, self.dataset.y_dim], name='y')
         else:
             self.y = None
 
+        # get the dimensions for the model to come from the dataset
         if self.crop:
             image_dims = [self.output_height, self.output_width, self.c_dim]
         else:
@@ -163,9 +169,8 @@ class DCGAN(object):
 
         sample_z = np.random.uniform(-1, 1, size=(self.sample_num, self.z_dim))
 
-        if self.y_dim is not None:
-            sample_inputs, sample_labels = self.dataset.get_sample_dataset(
-                self.sess)
+        if self.dataset.y_dim is not None:
+            sample_inputs, sample_labels = self.dataset.get_sample_dataset(self.sess)
             sample_feed = {
                 self.z: sample_z,
                 self.inputs: sample_inputs,
@@ -188,11 +193,17 @@ class DCGAN(object):
             print(" [!] Load failed...")
 
         # Retrieve the batch iterator of the dataset
-        get_next = self.dataset.get_batch_dataset(self.sess, config.epoch)
+        # TODO: Put this back into TFDataset class
+        batch_data, data_dict = self.dataset.get_batch_dataset
+        it = batch_data.make_initializable_iterator()
+        self.sess.run(it.initializer, data_dict)
+        get_next = it.get_next()
+
+        batch_idxs = min(len(self.data_X),
+                         config.train_size) // config.batch_size
 
         for epoch in range(config.epoch):
-            batch_idxs = min(len(self.data_X),
-                             config.train_size) // config.batch_size
+
 
             # if config.dataset == 'mnist':
             #   batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
@@ -209,7 +220,7 @@ class DCGAN(object):
                     .astype(np.float32)
 
                 # TODO: refer to dataset class if result has y_dimension
-                if self.y_dim is not None:
+                if self.dataset.y_dim is not None:
                     batch_images, batch_labels = self.sess.run(get_next)
                     d_feed = {
                         self.inputs: batch_images,
@@ -338,7 +349,7 @@ class DCGAN(object):
             if reuse:
                 scope.reuse_variables()
 
-            if not self.y_dim:
+            if not self.dataset.y_dim:
                 h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
                 h1 = lrelu(self.d_bn1(
                     conv2d(h0, self.df_dim*2, name='d_h1_conv')))
@@ -352,15 +363,15 @@ class DCGAN(object):
                 discriminator_model = (tf.nn.sigmoid(h4), h4)
 
             else:
-                yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+                yb = tf.reshape(y, [self.batch_size, 1, 1, self.dataset.y_dim])
                 x = conv_cond_concat(image, yb)
 
                 h0 = lrelu(
-                    conv2d(x, self.c_dim + self.y_dim, name='d_h0_conv'))
+                    conv2d(x, self.c_dim + self.dataset.y_dim, name='d_h0_conv'))
                 h0 = conv_cond_concat(h0, yb)
 
                 h1 = lrelu(self.d_bn1(
-                    conv2d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
+                    conv2d(h0, self.df_dim + self.dataset.y_dim, name='d_h1_conv')))
                 h1 = tf.reshape(h1, [self.batch_size, -1])
                 h1 = concat([h1, y], 1)
 
@@ -380,7 +391,7 @@ class DCGAN(object):
 
             generator_model = None
 
-            if not self.y_dim:
+            if not self.dataset.y_dim:
                 s_h, s_w = self.output_height, self.output_width
                 s_h2, s_w2 = conv_out_size_same(
                     s_h, 2), conv_out_size_same(s_w, 2)
@@ -422,7 +433,7 @@ class DCGAN(object):
                 s_w2, s_w4 = int(s_w/2), int(s_w/4)
 
                 # yb = tf.expand_dims(tf.expand_dims(y, 1),2)
-                yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+                yb = tf.reshape(y, [self.batch_size, 1, 1, self.dataset.y_dim])
                 z = concat([z, y], 1)
 
                 h0 = tf.nn.relu(
@@ -450,7 +461,7 @@ class DCGAN(object):
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()
 
-            if not self.y_dim:
+            if not self.dataset.y_dim:
                 s_h, s_w = self.output_height, self.output_width
                 s_h2, s_w2 = conv_out_size_same(
                     s_h, 2), conv_out_size_same(s_w, 2)
@@ -489,7 +500,7 @@ class DCGAN(object):
                 s_w2, s_w4 = int(s_w/2), int(s_w/4)
 
                 # yb = tf.reshape(y, [-1, 1, 1, self.y_dim])
-                yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+                yb = tf.reshape(y, [self.batch_size, 1, 1, self.dataset.y_dim])
                 z = concat([z, y], 1)
 
                 h0 = tf.nn.relu(self.g_bn0(

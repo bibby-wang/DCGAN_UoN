@@ -8,23 +8,35 @@ import os
 import numpy as np
 import tensorflow as tf
 
-class MNIST():
+from tf_dataset import TFDataset
 
-    def __init__(self, data_dir=None, batch_size=None, sample_num=64):
-        self.y_dim = 10 # TODO: Hardcoded number of classifications
-        self.data_dir = data_dir
-        self.data_x, self.data_y, self.c_dim = self.load_mnist()
-        self.batch_size = batch_size
-        self.input_height = 28
-        self.output_height = 28
-        self.input_width = 28
-        self.output_width = 28
-        self.crop = False
-        self.sample_num = sample_num
+class MNIST(TFDataset):
 
-        self.tf_dataset, self.tf_sample = self.create_tf_dataset()
+    def __init__(self, data_dir, epoch, batch_size=64, sample_num=64, ):
+        # self.data_dir = data_dir
+        # self.data_x, self.data_y, self.c_dim = self.load_mnist()
+        # self.batch_size = batch_size
+        # self.input_height = 28
+        # self.output_height = 28
+        # self.input_width = 28
+        # self.output_width = 28
+        # self.crop = False
+        # self.sample_num = sample_num
 
-    def load_mnist(self):
+        # self.tf_dataset, self.tf_sample = self.create_tf_dataset()
+
+        super(MNIST, self).__init__(
+            data_dir=data_dir,
+            batch_size=batch_size,
+            sample_num=sample_num,
+            epoch=epoch,
+            input_height=28,
+            input_width=28,
+            output_height=28,
+            output_width=28
+        )
+
+    def load_data(self):
 
         # training data
         fd = open(os.path.join(self.data_dir,'train-images-idx3-ubyte'))
@@ -54,13 +66,15 @@ class MNIST():
         X = np.concatenate((trX, teX), axis=0)
         y = np.concatenate((trY, teY), axis=0).astype(np.int)
 
-        seed = 547    # TODO: hardcoded seed number?
-        np.random.seed(seed)
-        np.random.shuffle(X)
-        np.random.seed(seed)
-        np.random.shuffle(y)
+        # TODO: Rely on Tensorflow's shuffling function
+        # seed = 547    # TODO: hardcoded seed number?
+        # np.random.seed(seed)
+        # np.random.shuffle(X)
+        # np.random.seed(seed)
+        # np.random.shuffle(y)
 
-        y_vec = np.zeros((len(y), self.y_dim), dtype=np.float)
+        # One hot encode the labels
+        y_vec = np.zeros((len(y), 10), dtype=np.float)
 
         for i, label in enumerate(y):
             y_vec[i,y[i]] = 1.0
@@ -68,37 +82,18 @@ class MNIST():
         # inputs, labels, channels
         return X/255., y_vec, 1 # normalized data_x, data_y, image channel
 
+    @property
     def create_tf_dataset(self, scope=None):
         # Tensorflow Dataset
-        with tf.variable_scope(scope or "datasets"):
-            x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="x_ph")
-            y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
 
-            dataset_x = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
+        # parent vairables
+        self.data_x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="data_x_ph")
+        self.label_y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="label_y_ph")
 
-            sample_dim_x = self.data_x[:self.sample_num]
-            sample_dim_y = self.data_y[:self.sample_num]
-            sample = tf.data.Dataset.from_tensors((sample_dim_x, sample_dim_y))
+        dataset_x = tf.data.Dataset.from_tensor_slices((self.data_x_ph, self.label_y_ph))
+
+        sample_dim_x = self.data_x[:self.sample_num]
+        sample_dim_y = self.data_y[:self.sample_num]
+        sample = tf.data.Dataset.from_tensors((sample_dim_x, sample_dim_y))
 
         return dataset_x, sample
-
-    def get_sample_dataset(self, sess, scope=None):
-        with tf.variable_scope(scope or "datasets"):
-            it = self.tf_sample.make_one_shot_iterator()
-            next = it.get_next()
-            data = sess.run(next)
-        return data
-
-    def get_batch_dataset(self, sess, epoch, scope=None):
-        with tf.variable_scope(scope or "datasets"):
-            x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="x_ph")
-            y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="y_ph")
-            tf_dataset = tf.data.Dataset.from_tensor_slices((x_ph, y_ph))
-            tf_dataset = tf_dataset.batch(self.batch_size, drop_remainder=True)
-            tf_dataset = tf_dataset.repeat(epoch)
-            it = tf_dataset.make_initializable_iterator()
-            sess.run(it.initializer, feed_dict={
-                x_ph: self.data_x,
-                y_ph: self.data_y
-            })
-        return it.get_next()
