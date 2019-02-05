@@ -20,7 +20,7 @@ class ModelConfig():
                  dataset="mnist",
                  input_fname_pattern="*.jpg",
                  checkpoint_dir="checkpoint",
-                 data_dir="../DCGAN-tensorflow/data",
+                 data_dir="data",
                  sample_dir="samples",
                  train=True,
                  crop=False,   # TODO: put this in dataset
