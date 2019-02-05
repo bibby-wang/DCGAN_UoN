@@ -17,7 +17,7 @@ class ModelConfig():
                  input_width=None,
                  output_height=64,
                  output_width=None,
-                 dataset="celebA",
+                 dataset="mnist",
                  input_fname_pattern="*.jpg",
                  checkpoint_dir="checkpoint",
                  data_dir="../DCGAN-tensorflow/data",
@@ -60,7 +60,6 @@ def main():
         os.makedirs(model_config.sample_dir)
 
     # Run the training
-    # TODO: Runner class not really needed, put all things in this main
     runner = Runner(model_config)
     runner.start_training()
 

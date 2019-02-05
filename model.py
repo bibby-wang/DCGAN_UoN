@@ -58,7 +58,6 @@ class DCGAN(object):
         self.input_width = input_width
         self.output_height = output_height
         self.output_width = output_width
-        # self.y_dim = y_dim
 
         self.z_dim = z_dim
 
@@ -89,8 +88,6 @@ class DCGAN(object):
         self.input_fname_pattern = input_fname_pattern
         self.checkpoint_dir = checkpoint_dir
         self.data_dir = data_dir
-
-
 
         self.grayscale = (self.c_dim == 1)
 
@@ -200,16 +197,6 @@ class DCGAN(object):
 
         for epoch in range(config.epoch):
 
-
-            # if config.dataset == 'mnist':
-            #   batch_idxs = min(len(self.data_X), config.train_size) // config.batch_size
-            # else:
-            # TODO: Put this in celebA dataset class
-            #   self.data = glob(os.path.join(
-            #     config.data_dir, config.dataset, self.input_fname_pattern))
-            #   np.random.shuffle(self.data)
-            #   batch_idxs = min(len(self.data), config.train_size) // config.batch_size
-
             for idx in range(0, int(batch_idxs)):
 
                 batch_z = np.random.uniform(-1, 1, [config.batch_size, self.z_dim]) \
@@ -232,25 +219,6 @@ class DCGAN(object):
                         self.z: batch_z, }
                     g_feed = {self.z: batch_z, }
 
-                # if config.dataset == 'mnist':
-                #   batch_images = self.data_X[idx*config.batch_size:(idx+1)*config.batch_size]
-                #   batch_labels = self.data_y[idx*config.batch_size:(idx+1)*config.batch_size]
-                # else:
-                #   batch_files = self.data[idx*config.batch_size:(idx+1)*config.batch_size]
-                #   batch = [
-                #       get_image(batch_file,
-                #                 input_height=self.input_height,
-                #                 input_width=self.input_width,
-                #                 resize_height=self.output_height,
-                #                 resize_width=self.output_width,
-                #                 crop=self.crop,
-                #                 grayscale=self.grayscale) for batch_file in batch_files]
-                #   if self.grayscale:
-                #     batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
-                #   else:
-                #     batch_images = np.array(batch).astype(np.float32)
-
-                # if config.dataset == 'mnist':
                   # Update D network
                 _, summary_str = self.sess.run(
                     [d_optim, self.d_sum], feed_dict=d_feed)
@@ -267,62 +235,17 @@ class DCGAN(object):
                 self.writer.add_summary(summary_str, counter)
 
                 errD_fake = self.d_loss_fake.eval(d_feed, self.sess)
-
-                # errD_real = self.d_loss_real.eval({
-                #     self.inputs: batch_images,
-                #     self.y:batch_labels}, self.sess)
-
                 errD_real = self.d_loss_real.eval(d_feed, self.sess)
-
                 errG = self.g_loss.eval(g_feed, self.sess)
-
-                # else:
-                #   # Update D network
-                #   _, summary_str = self.sess.run([d_optim, self.d_sum],
-                #     feed_dict={
-                #       self.inputs: batch_images,
-                #       self.z: batch_z
-                #       })
-                #   self.writer.add_summary(summary_str, counter)
-
-                #   # Update G network
-                #   _, summary_str = self.sess.run([g_optim, self.g_sum],
-                #     feed_dict={
-                #       self.z: batch_z
-                #       })
-                #   self.writer.add_summary(summary_str, counter)
-
-                #   # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                #   _, summary_str = self.sess.run([g_optim, self.g_sum],
-                #     feed_dict={ self.z: batch_z })
-                #   self.writer.add_summary(summary_str, counter)
-                #
-                #   errD_fake = self.d_loss_fake.eval({ self.z: batch_z }, self.sess)
-                #   errD_real = self.d_loss_real.eval({ self.inputs: batch_images }, self.sess)
-                #   errG = self.g_loss.eval({self.z: batch_z}, self.sess)
 
                 counter += 1
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f"
                       % (epoch, config.epoch, idx, batch_idxs,
                          time.time() - start_time, errD_fake+errD_real, errG))
 
-                # Every 100 iterations, get loss of current generator and discriminator
-                # weights using sample data
+                # get loss of current generator and discriminator
+                # weights using sample data, every 100 iterations
                 if np.mod(counter, 100) == 1:
-                    # TODO: Make print of accuracy and loss to be dataset agnostic
-                    # if config.dataset == 'mnist':
-
-                    #     samples, d_loss, g_loss = self.sess.run(
-                    #         [self.sampler, self.d_loss, self.g_loss],
-                    #         feed_dict={
-                    #             self.z: sample_z,
-                    #             self.inputs: sample_inputs,
-                    #             self.y:sample_labels,})
-                    #     save_images(samples, image_manifold_size(samples.shape[0]),
-                    #           './{}/train_{:02d}_{:04d}.png'.format(config.sample_dir, epoch, idx))
-                    #     print("[Sample] d_loss: %.8f, g_loss: %.8f" % (d_loss, g_loss))
-
-                    # else:
 
                     try:
                         samples, d_loss, g_loss = self.sess.run(
@@ -334,6 +257,7 @@ class DCGAN(object):
                     except:
                         print("one pic error!...")
 
+                # Add a checkpoint every 500 iterations
                 if np.mod(counter, 500) == 2:
                     self.save(config.checkpoint_dir, counter)
 
@@ -452,7 +376,7 @@ class DCGAN(object):
 
             return generator_model
 
-    # TODO: Why create a new generator but enclose everything in variable scope?
+    # TODO: Use existing graph for the sample?
     def sampler_model(self, z, y=None):
         with tf.variable_scope("generator") as scope:
             scope.reuse_variables()

@@ -32,18 +32,6 @@ class CelebA(TFDataset):
             output_width=64
         )
 
-        # self.data_dir = data_dir
-        # self.batch_size = batch_size
-        # self.fname_extension = "*.jpg"
-        # self.input_height = 108
-        # self.output_height = 64
-        # self.input_width = 108
-        # self.output_width = 64
-        # self.sample_num = sample_num
-
-        # self.data_x, self.data_y, self.c_dim = self.load_data()
-        # self.tf_dataset, self.tf_sample = self.create_tf_dataset()
-
     def load_data(self):
         data_x = None
         data_y = None
@@ -51,15 +39,11 @@ class CelebA(TFDataset):
 
         data_path = os.path.join(self.data_dir, self.fname_extension)
 
-        # TODO: all input filenames are read into memory. Make this to be computationally calculated
-        # such that only a portion of the filenames are read into memory and hence
-        # only a portion of pictures is read into memory as well
-        data_x = np.array(glob(data_path))  # Get all filenames of images in data_path
+        # Get all filenames of images in data_path
+        data_x = np.array(glob(data_path)) 
 
         if len(data_x) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")
-
-        # np.random.shuffle(data_x)
 
         imreadImg = imread(data_x[0])
 

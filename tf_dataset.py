@@ -38,19 +38,6 @@ class TFDataset(abc.ABC):
         else:
             self.y_dim = len(self.data_y[0])
 
-    # TODO: data encapsulation
-    #  @property
-    #  def label_dim(self):
-    #      return self.__label_dim
-
-    #  @label_dim.setter
-    #  def label_dim(self, label_dim):
-    #      self.__label_dim = label_dim
-
-    #  @property
-    #  def data_dir(self):
-    #      return self.__data_dir
-
     @abc.abstractmethod
     def load_data(self):
         raise NotImplementedError("load data is not implemented yet")

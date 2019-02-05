@@ -13,17 +13,6 @@ from tf_dataset import TFDataset
 class MNIST(TFDataset):
 
     def __init__(self, data_dir, epoch, batch_size=64, sample_num=64, ):
-        # self.data_dir = data_dir
-        # self.data_x, self.data_y, self.c_dim = self.load_mnist()
-        # self.batch_size = batch_size
-        # self.input_height = 28
-        # self.output_height = 28
-        # self.input_width = 28
-        # self.output_width = 28
-        # self.crop = False
-        # self.sample_num = sample_num
-
-        # self.tf_dataset, self.tf_sample = self.create_tf_dataset()
 
         super(MNIST, self).__init__(
             data_dir=data_dir,
@@ -58,20 +47,12 @@ class MNIST(TFDataset):
         loaded = np.fromfile(file=fd,dtype=np.uint8)
         teY = loaded[8:].reshape((10000)).astype(np.float)
 
-
         trY = np.asarray(trY)
         teY = np.asarray(teY)
 
         # Combine Training and Test data
         X = np.concatenate((trX, teX), axis=0)
         y = np.concatenate((trY, teY), axis=0).astype(np.int)
-
-        # TODO: Rely on Tensorflow's shuffling function
-        # seed = 547    # TODO: hardcoded seed number?
-        # np.random.seed(seed)
-        # np.random.shuffle(X)
-        # np.random.seed(seed)
-        # np.random.shuffle(y)
 
         # One hot encode the labels
         y_vec = np.zeros((len(y), 10), dtype=np.float)
@@ -85,7 +66,6 @@ class MNIST(TFDataset):
     @property
     def create_tf_dataset(self, scope=None):
         # Tensorflow Dataset
-
         # parent vairables
         self.data_x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="data_x_ph")
         self.label_y_ph = tf.placeholder(self.data_y.dtype, self.data_y.shape, name="label_y_ph")

@@ -24,13 +24,10 @@ class Runner():
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth=True
 
-        # reset tensorflow graph, enables re-running model withour restarting the kernel
+        # reset tensorflow graph, does not require kernel restart in spyder
         tf.reset_default_graph()
 
-        self.sess = tf.Session(config=run_config)
-        # self.model = model
-        # self.dataset = dataset
-        self.model_config = model_config
+        sess = tf.Session(config=run_config)
 
         # mnist dataset specific settings
         if model_config.dataset == 'mnist':
@@ -61,8 +58,8 @@ class Runner():
             model_config.output_width = model_config.output_height
 
         # if model_config.dataset == 'mnist':
-        self.model = DCGAN(
-            self.sess,
+        model = DCGAN(
+            sess,
             input_width=model_config.input_width,
             input_height=model_config.input_height,
             output_width=model_config.output_width,
@@ -83,10 +80,10 @@ class Runner():
     def start_training(self):
 
         show_all_variables()
-        if self.model_config.train:
-          self.model.train(self.model_config)
+        if model_config.train:
+          model.train(model_config)
         else:
-          if not self.model.load(self.model_config.checkpoint_dir)[0]:
+          if not model.load(model_config.checkpoint_dir)[0]:
             raise Exception("[!] Train a model first, then run test mode")
 
       # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
@@ -96,6 +93,6 @@ class Runner():
       #                 [dcgan.h4_w, dcgan.h4_b, None])
 
         OPTION = 1
-        visualize(self.sess, self.model, self.model_config, OPTION)
+        visualize(sess, model, model_config, OPTION)
 
-        self.sess.close()
+        sess.close()
