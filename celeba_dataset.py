@@ -15,11 +15,19 @@ from tf_dataset import TFDataset
 
 class CelebA(TFDataset):
 
-    def __init__(self, data_dir, epoch, batch_size=64, grayscale=False, sample_num=64, crop=True):
+    def __init__(self,
+                 data_dir,
+                 epoch,
+                 sess,
+                 batch_size=64,
+                 grayscale=False,
+                 sample_num=64,
+                 crop=True):
 
         self.crop = crop
         self.grayscale = grayscale
-        self.fname_extension="*.jpg"
+        self.fname_extension = "*.jpg"
+        self.sess = sess
 
         super(CelebA, self).__init__(
             data_dir=data_dir,
@@ -40,7 +48,7 @@ class CelebA(TFDataset):
         data_path = os.path.join(self.data_dir, self.fname_extension)
 
         # Get all filenames of images in data_path
-        data_x = np.array(glob(data_path)) 
+        data_x = np.array(glob(data_path))
 
         if len(data_x) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")
@@ -65,16 +73,23 @@ class CelebA(TFDataset):
         Create the tf.data.Dataset for the training and samples datasets
         """
 
-        self.data_x_ph = tf.placeholder(self.data_x.dtype, self.data_x.shape, name="data_x_ph")
+        self.data_x_ph = tf.placeholder(
+            self.data_x.dtype, self.data_x.shape, name="data_x_ph")
         dataset_x = tf.data.Dataset.from_tensor_slices((self.data_x_ph,))
         dataset_x = dataset_x.map(self.__read_transform)
 
         sample_x = self.data_x[:self.sample_num]
         sample = tf.data.Dataset.from_tensor_slices((sample_x,))
         sample = sample.map(self.__read_transform)
-        sample = sample.flat_map(lambda x: tf.data.Dataset.from_tensor_slices((x,)))
+        sample_it = sample.make_one_shot_iterator()
+        sample_next = sample_it.get_next()
 
-        return dataset_x, sample
+        sample_images = np.array([self.sess.run(sample_next)
+                                  for _ in range(self.sample_num)]).astype(np.float)
+
+        sample_images = tf.data.Dataset.from_tensors(sample_images)
+
+        return dataset_x, sample_images
 
     def __read_transform(self, filename, scope=None):
         with tf.variable_scope(scope or "datasets"):
